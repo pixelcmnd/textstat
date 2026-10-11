@@ -1,5 +1,4 @@
 use clap::Parser;
-use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::process;
@@ -22,31 +21,41 @@ fn main() {
     })
 }
 
-fn run(cli: Cli, cli_options: CliOptions) -> Result<(), Box<dyn Error>> {
+fn run(cli: Cli, cli_options: CliOptions) -> std::io::Result<()> {
+    let mut handles = Vec::new();
     // open file path into reader
     for file in cli.file_paths {
-        let file_name = format!("{}", file.display());
-        let file_hand = File::open(file)?;
-        let reader = BufReader::new(file_hand);
+        let handle = std::thread::spawn(move || -> std::io::Result<()> {
+            let file_name = format!("{}", file.display());
+            let file_hand = File::open(file)?;
+            let reader = BufReader::new(file_hand);
 
-        let count = count(reader, &cli_options)?;
-        print!("In the file {file_name}. ");
-        if cli_options.bytes {
-            print!("Bytes: {0} ", count.bytes);
-        }
-        if cli_options.characters {
-            print!("Characters: {0} ", count.characters);
-        }
-        if cli_options.words {
-            print!("Words: {0} ", count.words);
-        }
-        if cli_options.length {
-            print!("Longest line: {0} ", count.length);
-        }
-        if cli_options.lines {
-            print!("Lines: {0} ", count.lines);
-        }
-        println!();
+            let count = count(reader, &cli_options)?;
+            print!("In the file {file_name}. ");
+            if cli_options.bytes {
+                print!("Bytes: {0} ", count.bytes);
+            }
+            if cli_options.characters {
+                print!("Characters: {0} ", count.characters);
+            }
+            if cli_options.words {
+                print!("Words: {0} ", count.words);
+            }
+            if cli_options.length {
+                print!("Longest line: {0} ", count.length);
+            }
+            if cli_options.lines {
+                print!("Lines: {0} ", count.lines);
+            }
+            println!();
+            Ok(())
+        });
+        handles.push(handle);
+    }
+    for handle in handles {
+        handle
+            .join()
+            .map_err(|_| std::io::Error::other("Worker thread panicked"))??;
     }
     Ok(())
 }

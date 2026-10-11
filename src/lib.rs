@@ -1,5 +1,4 @@
 use clap::Parser;
-use std::error::Error;
 use std::io::BufRead;
 use std::path::PathBuf;
 
@@ -31,6 +30,7 @@ pub struct Cli {
     pub file_paths: Vec<PathBuf>,
 }
 
+#[derive(Clone, Copy)]
 pub struct CliOptions {
     pub length: bool,
     pub bytes: bool,
@@ -48,7 +48,7 @@ pub struct Counts {
     pub words: usize,
 }
 
-pub fn count<R: BufRead>(mut reader: R, cli: &CliOptions) -> Result<Counts, Box<dyn Error>> {
+pub fn count<R: BufRead>(mut reader: R, cli: &CliOptions) -> std::io::Result<Counts> {
     let mut counts = Counts::default();
     let mut buffer = String::new();
     let mut temp_count_bytes;
@@ -61,10 +61,8 @@ pub fn count<R: BufRead>(mut reader: R, cli: &CliOptions) -> Result<Counts, Box<
                 counts.bytes += temp_count_bytes;
             };
             // update length of biggest line
-            if cli.length {
-                if counts.length < temp_count_bytes {
-                    counts.length = temp_count_bytes;
-                }
+            if cli.length && counts.length < temp_count_bytes {
+                counts.length = temp_count_bytes;
             }
         }
         // count chars
