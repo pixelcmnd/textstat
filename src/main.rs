@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::process;
 
-use wc_rs::*;
+use textstat::*;
 
 fn main() {
     let cli = Cli::parse();

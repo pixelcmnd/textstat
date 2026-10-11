@@ -1,5 +1,5 @@
 [package]
-name = "wc_rs"
+name = "textstat"
 version = "0.1.0"
 edition = "2024"
 
