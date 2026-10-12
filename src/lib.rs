@@ -62,7 +62,16 @@ pub fn count<R: BufRead>(mut reader: R, cli: &CliOptions) -> std::io::Result<Cou
         }
 
         if cli.length {
-            let tmp_characters = count_chars_str(buffer.trim_end_matches(['\n', '\r']));
+            let mut trimmed_buffer = buffer.as_str();
+
+            while let Some(stripped) = trimmed_buffer
+                .strip_suffix("\r\n")
+                .or_else(|| trimmed_buffer.strip_suffix('\n'))
+            {
+                trimmed_buffer = stripped;
+            }
+
+            let tmp_characters = count_chars_str(trimmed_buffer);
 
             if counts.length < tmp_characters {
                 counts.length = tmp_characters;
@@ -171,5 +180,17 @@ mod tests {
         let counts_reference = Counts::default();
 
         assert_eq!(counts_reference, answer);
+    }
+
+    #[test]
+    fn keep_single_cr_in_end_of_line() {
+        let ascii = String::from("Test\r");
+        let opts = CliOptions {
+            length: true,
+            ..CliOptions::default()
+        };
+
+        let buff = Cursor::new(ascii);
+        assert_eq!(5usize, count(buff, &opts).unwrap().length);
     }
 }
